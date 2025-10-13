@@ -1,0 +1,41 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "D:\\Nodejs\\MangChiaSeKhoBai\\blockchain\\contracts\\WarehouseRental.sol": {
+      "lastModificationDate": 1760029186663,
+      "contentHash": "7c308e76b8b2fe1ad8e536e4976a88c5",
+      "sourceName": "contracts/WarehouseRental.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "WarehouseRental"
+      ]
+    }
+  }
+}
