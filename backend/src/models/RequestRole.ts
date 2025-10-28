@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-interface Image {
+export interface Image {
   public_id: string;
   secure_url: string;
 }
@@ -17,7 +17,11 @@ export interface IRequestRole extends Document {
 const requestRoleSchema = new Schema<IRequestRole>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    requestedRole: { type: String, required: true },
+    requestedRole: {
+      type: String,
+      enum: ["owner"],
+      required: true,
+    },
     images: [
       {
         public_id: { type: String, required: true },

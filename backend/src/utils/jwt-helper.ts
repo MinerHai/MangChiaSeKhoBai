@@ -5,7 +5,7 @@ export const signToken = async (user: AuthPayload): Promise<string> => {
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role }, // payload
     process.env.JWT_SECRET_KEY?.toString() || "", // secret key
-    { expiresIn: "1h" } // hết hạn 1 giờ
+    { expiresIn: "72h" } // hết hạn 72 giờ
   );
   return token;
 };

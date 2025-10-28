@@ -3,6 +3,8 @@ import User from "../models/User";
 import bcrypt from "bcryptjs";
 import { AuthPayload } from "../types/auth-payload";
 import { signToken } from "../utils/jwt-helper";
+import { uploadMultipleImages } from "../utils/cloudinary-util";
+import cloudinary from "../config/cloudinary";
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -123,6 +125,11 @@ export const ChangePassword = async (req: Request, res: Response) => {
         message: "Người dùng không tồn tại",
       });
     }
+
+    // console.error("Current Password:", currentPassword);
+    // console.error("Existing User Password Hash:", existingUser.password);
+    // console.error("New password", newPassword);
+
     const isMatch = await bcrypt.compare(
       currentPassword,
       existingUser.password
@@ -140,6 +147,69 @@ export const ChangePassword = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Đổi mật khẩu thành công",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ! Vui lòng thử lại",
+    });
+  }
+};
+
+export const ChangeAvatar = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as AuthPayload;
+
+    const existingUser = await User.findById(user.id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Người dùng không tồn tại",
+      });
+    }
+
+    // Xử lý upload hình ảnh qua multer middleware
+    const files = req.files as Express.Multer.File[];
+    console.log(files);
+    if (!files || files.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng upload ít nhất một hình ảnh" });
+    }
+    const filePaths = files.map((f) => f.path);
+
+    // Upload lên Cloudinary
+    const images = await uploadMultipleImages(filePaths, "avatar"); // { public_id, secure_url }[]
+
+    if (images.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Upload hình ảnh thất bại! Vui lòng thử lại", // Upload lên cloud thất bại
+      });
+    }
+    if (existingUser.avatar && existingUser.avatar.public_id) {
+      // Xoá ảnh cũ trên Cloudinary nếu có
+      await cloudinary.uploader.destroy(String(existingUser.avatar.public_id));
+    }
+    const firstImage = images[0];
+    if (!firstImage) {
+      return res.status(500).json({
+        success: false,
+        message: "Upload hình ảnh thất bại! Vui lòng thử lại",
+      });
+    }
+
+    existingUser.avatar = {
+      public_id: firstImage.public_id,
+      secure_url: firstImage.secure_url,
+    } as any;
+    await existingUser.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Thêm ảnh đại diện thành công",
+      user: existingUser,
     });
   } catch (error) {
     console.log(error);

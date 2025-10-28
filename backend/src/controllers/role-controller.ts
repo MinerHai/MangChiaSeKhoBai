@@ -25,6 +25,7 @@ export const requestRoleOwner = async (req: Request, res: Response) => {
       });
     }
 
+    // Xử lý upload hình ảnh qua multer middleware
     const files = req.files as Express.Multer.File[];
     console.log(files);
     if (!files || files.length === 0) {
@@ -66,26 +67,90 @@ export const requestRoleOwner = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Lấy tất cả các yêu cầu thay đổi vai trò
+ * page, limit: phân trang (nếu cần)
+ */
 export const getAllRoleRequests = async (req: Request, res: Response) => {
   try {
-    const requests = await RequestRole.find().populate("user", "-password");
+    const { status, email, page = 1, limit = 10 } = req.query;
+
+    // 🔹 Validate status hợp lệ
+    const validStatuses = ["pending", "approved", "rejected"];
+    if (
+      status &&
+      status !== "all" &&
+      !validStatuses.includes(status as string)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Trạng thái không hợp lệ!",
+      });
+    }
+
+    // 🔹 Chuẩn bị filter
+    const filter: any = {};
+    if (status && status !== "all") filter.status = status;
+
+    // 🔹 Nếu có email → tìm user tương ứng
+    if (email) {
+      const users = await User.find({
+        email: { $regex: email as string, $options: "i" }, // tìm gần đúng, không phân biệt hoa thường
+      }).select("_id");
+
+      if (users.length === 0) {
+        return res.status(200).json({
+          success: true,
+          total: 0,
+          page: 1,
+          totalPages: 0,
+          requests: [],
+        });
+      }
+
+      filter.user = { $in: users.map((u) => u._id) };
+    }
+
+    // 🔹 Phân trang
+    const pageNumber = parseInt(page as string, 10);
+    const limitNumber = parseInt(limit as string, 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // 🔹 Query dữ liệu
+    const [requests, total] = await Promise.all([
+      RequestRole.find(filter)
+        .populate("user", "-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNumber),
+      RequestRole.countDocuments(filter),
+    ]);
+
+    // 🔹 Trả kết quả
     res.status(200).json({
       success: true,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
       requests,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error in getAllRoleRequests:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi máy chủ! Vui lòng thử lại",
+      message: "Lỗi máy chủ! Vui lòng thử lại.",
     });
   }
 };
 
-export const acceptRoleRequest = async (req: Request, res: Response) => {
+export const getRoleRequestDetail = async (req: Request, res: Response) => {
   try {
     const requestId = req.params.id;
-    const request = await RequestRole.findById(requestId);
+    const request = await RequestRole.findById(requestId).populate(
+      "user",
+      "-password"
+    );
     if (!request) {
       return res.status(404).json({
         success: false,
@@ -93,7 +158,37 @@ export const acceptRoleRequest = async (req: Request, res: Response) => {
       });
     }
 
-    request.status = "approved";
+    res.status(200).json({
+      success: true,
+      request,
+    });
+  } catch (error) {
+    console.error("Error in getRoleRequestDetail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ! Vui lòng thử lại.",
+    });
+  }
+};
+
+export const ResponseRoleRequest = async (req: Request, res: Response) => {
+  try {
+    const requestId = req.params.id;
+    const request = await RequestRole.findById(requestId);
+    const status = req.body.status;
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy yêu cầu",
+      });
+    }
+    if (request.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Trạng thái yêu cầu không hợp lệ",
+      });
+    }
+    request.status = status;
     const user = await User.findById(request.user._id);
     if (user) {
       user.role = "owner";
@@ -104,33 +199,6 @@ export const acceptRoleRequest = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Đã chấp nhận yêu cầu",
-      request,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi máy chủ! Vui lòng thử lại",
-    });
-  }
-};
-
-export const rejectRoleRequest = async (req: Request, res: Response) => {
-  try {
-    const requestId = req.params.id;
-    const request = await RequestRole.findById(requestId);
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy yêu cầu",
-      });
-    }
-    request.status = "rejected";
-    await request.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Đã từ chối yêu cầu",
       request,
     });
   } catch (error) {

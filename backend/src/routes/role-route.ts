@@ -1,15 +1,15 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import { ActivedAccountMiddleware } from "../middlewares/actived-middleware";
-import { RequestRole } from "../models/RequestRole";
 import upload from "../middlewares/multer-middleware";
 import {
   requestRoleOwner,
   getAllRoleRequests,
-  acceptRoleRequest,
-  rejectRoleRequest,
+  getRoleRequestDetail,
+  ResponseRoleRequest,
 } from "../controllers/role-controller";
 import { authorizeRoles } from "../middlewares/role-middleware";
 import { AuthMiddleware } from "../middlewares/auth-middleware";
+import { get } from "http";
 const router = express.Router();
 
 router.post(
@@ -25,17 +25,17 @@ router.get(
   authorizeRoles("admin"),
   getAllRoleRequests
 );
+router.get(
+  "/requests/:id",
+  AuthMiddleware,
+  authorizeRoles("admin"),
+  getRoleRequestDetail
+);
+router.post(
+  "/response-request/:id",
+  AuthMiddleware,
+  authorizeRoles("admin"),
+  ResponseRoleRequest
+);
 
-router.post(
-  "/accept-request/:id",
-  AuthMiddleware,
-  authorizeRoles("admin"),
-  acceptRoleRequest
-);
-router.post(
-  "/reject-request/:id",
-  AuthMiddleware,
-  authorizeRoles("admin"),
-  rejectRoleRequest
-);
 export default router;
