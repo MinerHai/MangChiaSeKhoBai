@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import WareHouse from "../models/Warehouse";
 import { uploadMultipleImages } from "../utils/cloudinary-util";
 import cloudinary from "../config/cloudinary";
+import { Console } from "console";
 
 /**
  * POST /api/warehouses/add
@@ -273,7 +274,8 @@ export const updateWarehouse = async (req: Request, res: Response) => {
 export const deleteWarehouse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const wh = await WareHouse.findOneAndDelete({ _id: id });
+    const wh = await WareHouse.findById(id);
+
     if (!wh) {
       return res.status(404).json({
         success: false,
@@ -289,12 +291,16 @@ export const deleteWarehouse = async (req: Request, res: Response) => {
       });
     }
 
-    // Xóa ảnh ở cloundinary nếu có
+    // Xóa ảnh ở Cloudinary nếu có
     if (wh.images && wh.images.length > 0) {
       await Promise.all(
         wh.images.map((image) => cloudinary.uploader.destroy(image.public_id))
       );
     }
+
+    // Xóa kho hàng sau khi đã kiểm tra quyền
+    await WareHouse.findByIdAndDelete(id);
+
     res.status(200).json({
       success: true,
       message: "Kho hàng đã được xóa",
@@ -316,15 +322,9 @@ export const deleteWarehouse = async (req: Request, res: Response) => {
  */
 export const deleteWarehouseImage = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { public_id } = req.params;
-    if (!public_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Public ID is required",
-      });
-    }
-    let wh = await WareHouse.findById(id);
+    const { id, public_id: rawPublicId } = req.params; // rawPublicId = "xyz
+    const fullPublicId = `warehouses/${rawPublicId}`; // → warehouses/xyz
+    const wh = await WareHouse.findById(id);
     if (!wh) {
       return res.status(404).json({
         success: false,
@@ -332,24 +332,32 @@ export const deleteWarehouseImage = async (req: Request, res: Response) => {
       });
     }
 
-    // kiểm tra quyền truy cập
-    const user = req.user; // from AuthMiddleware
+    const user = req.user;
     if (user?.role !== "admin" && wh.ownerUserId?.toString() !== user?.id) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền xóa kho hàng này",
+        message: "Bạn không có quyền xóa ảnh kho hàng này",
       });
     }
-    // Xóa ảnh ở Cloudinary
-    await cloudinary.uploader.destroy(public_id);
-    // Xóa ảnh khỏi mảng images trong document (using Mongoose subdocument removal)
-    const imgDoc = wh.images.find((img) => img.public_id === public_id);
-    if (imgDoc) (imgDoc as any).remove();
-    await wh.save();
+
+    console.log("Deleting Cloudinary image:", fullPublicId);
+    const result = await cloudinary.uploader.destroy(fullPublicId);
+    if (result.result !== "ok" && result.result !== "not found") {
+      return res.status(500).json({
+        success: false,
+        message: "Không thể xóa ảnh trên Cloudinary",
+      });
+    }
+    const result_data = await WareHouse.findByIdAndUpdate(
+      id,
+      { $pull: { images: { public_id: fullPublicId } } },
+      { new: true }
+    );
+
     res.status(200).json({
       success: true,
-      message: "Hình ảnh đã được xóa",
-      data: wh,
+      message: "Hình ảnh đã được xóa thành công",
+      data: result_data,
     });
   } catch (err: any) {
     console.error(err);

@@ -26,7 +26,7 @@ router.get("/:id", AuthMiddleware, getWarehouseById);
 router.delete("/delete/:id", AuthMiddleware, deleteWarehouse);
 
 //thêm images của warehouse
-router.post(
+router.put(
   "/:id/images",
   AuthMiddleware,
   upload.array("images", 5),

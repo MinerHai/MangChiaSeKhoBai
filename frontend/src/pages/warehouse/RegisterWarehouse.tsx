@@ -7,15 +7,17 @@ import {
   HStack,
   Image,
   Input,
-  Spinner,
-  Text,
   Textarea,
   useToast,
   VStack,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
+import FullScreenLoader from "../../components/FullScreenLoader";
 import { LocationDropdown } from "../../components/LocationDropdown";
+import WalletConnectButton from "../../components/WalletConnectButton";
+import { ROUTES } from "../../router";
 import {
   warehouseSchema,
   type RegisterWarehouseForm,
@@ -23,8 +25,6 @@ import {
 import { registerWarehouseOnChain } from "../../services/blockchainService";
 import { saveWarehouseToBackend } from "../../services/warehouseService";
 import { useWalletStore } from "../../stores/walletStore";
-import { useNavigate } from "react-router-dom";
-import FullScreenLoader from "../../components/FullScreenLoader";
 
 export default function RegisterWarehouse() {
   const { address, provider, connectWallet } = useWalletStore();
@@ -116,6 +116,7 @@ export default function RegisterWarehouse() {
       setForm({});
       setImageFile(null);
       setPreview(null);
+      navigate(ROUTES.USER_WAREHOUSES);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         const first = err.issues[0];
@@ -148,19 +149,7 @@ export default function RegisterWarehouse() {
       </Heading>
       <HStack>
         <Button onClick={() => navigate(-1)}>← Quay lại</Button>
-        {!address ? (
-          <Button
-            colorScheme="gray"
-            onClick={connectWallet}
-            isDisabled={loading}
-          >
-            Kết nối ví
-          </Button>
-        ) : (
-          <Text fontSize="sm">
-            🪙 Ví đang kết nối: <b>{address}</b>
-          </Text>
-        )}
+        <WalletConnectButton />
       </HStack>
 
       <VStack spacing={5} align="stretch">

@@ -5,7 +5,6 @@ import {
   FormLabel,
   Heading,
   HStack,
-  Image,
   Input,
   Spinner,
   Text,
@@ -13,27 +12,32 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
-import { z } from "zod";
 import { useNavigate, useParams } from "react-router-dom";
-import { useWalletStore } from "../../stores/walletStore";
+import { z } from "zod";
+import DeleteButton from "../../components/DeleteButton";
+import FullScreenLoader from "../../components/FullScreenLoader";
 import { LocationDropdown } from "../../components/LocationDropdown";
+import { useUpdateWarehouse } from "../../hooks/useWarehouse";
+import { ROUTES } from "../../router";
 import {
   warehouseSchema,
   type RegisterWarehouseForm,
 } from "../../schemas/warehouseSchema";
-import { useQuery } from "@tanstack/react-query";
 import {
+  deleteWarehouse,
   fetchWarehouseById,
   type Warehouse,
 } from "../../services/warehouseService";
-import { useUpdateWarehouse } from "../../hooks/useWarehouse";
-import { ROUTES } from "../../router";
-import FullScreenLoader from "../../components/FullScreenLoader";
+import { useWalletStore } from "../../stores/walletStore";
+import { WarehouseImagesUploader } from "../../components/warehouse/WarehouseImagesUploader";
+
+// IMPORT COMPONENT ĐÃ TẠO
+import WalletConnectButton from "../../components/WalletConnectButton";
 
 export default function EditWarehouse() {
   const { id } = useParams<{ id: string }>();
-  const { address, provider, connectWallet } = useWalletStore();
   const navigate = useNavigate();
   const toast = useToast();
   const [form, setForm] = useState<Partial<RegisterWarehouseForm>>({});
@@ -43,6 +47,10 @@ export default function EditWarehouse() {
     ward: "",
   });
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
+
+  // LẤY TRỰC TIẾP TỪ STORE (không cần connectWallet riêng)
+  const { address, provider } = useWalletStore();
+
   // Query lấy dữ liệu kho hiện tại
   const { data, isLoading, isError } = useQuery({
     queryKey: ["warehouse", id],
@@ -69,6 +77,7 @@ export default function EditWarehouse() {
       });
     }
   }, [data]);
+
   // Mutation update
   const updateMutation = useUpdateWarehouse(provider!);
 
@@ -89,7 +98,6 @@ export default function EditWarehouse() {
         district: location.district ?? "",
         ward: location.ward ?? "",
         street: form.street ?? "",
-        // ép kiểu về string để khớp schema
         capacity: form.capacity !== undefined ? String(form.capacity) : "",
         pricePerDayWei:
           form.pricePerDayWei !== undefined ? String(form.pricePerDayWei) : "",
@@ -99,8 +107,13 @@ export default function EditWarehouse() {
       };
       const validData = warehouseSchema.parse(payload);
 
+      // TỰ ĐỘNG GỌI connectWallet nếu chưa có (sẽ tự động ký nếu ví đã mở)
       if (!address || !provider) {
-        await connectWallet();
+        toast({
+          title: "Vui lòng kết nối ví...",
+          status: "info",
+          duration: 2000,
+        });
         return;
       }
 
@@ -125,7 +138,6 @@ export default function EditWarehouse() {
           ward: validData.ward,
           street: validData.street,
         },
-
         ownerWallet: address,
       });
 
@@ -159,6 +171,29 @@ export default function EditWarehouse() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const res = await deleteWarehouse(warehouse?._id!);
+      if (res.data) {
+        toast({
+          title: "Xóa kho thành công!!",
+          status: "info",
+          duration: 1500,
+          position: "top-right",
+        });
+        navigate(ROUTES.USER_WAREHOUSES);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Có lỗi xảy ra!!",
+        status: "error",
+        duration: 1500,
+        position: "top-right",
+      });
+    }
+  };
+
   if (isLoading)
     return (
       <Box textAlign="center" mt={20}>
@@ -180,24 +215,22 @@ export default function EditWarehouse() {
         Chỉnh sửa kho
       </Heading>
 
-      <HStack>
-        <Button onClick={() => navigate(-1)}>← Quay lại</Button>
-        {!address ? (
-          <Button
-            colorScheme="gray"
-            onClick={connectWallet}
-            isDisabled={updateMutation.isPending}
-          >
-            Kết nối ví
-          </Button>
-        ) : (
-          <Text fontSize="sm">
-            🪙 Ví đang kết nối: <b>{address}</b>
-          </Text>
-        )}
+      {/* THAY THẾ HOÀN TOÀN PHẦN KẾT NỐI VÍ */}
+      <HStack mb={6} justify="space-between">
+        <Button onClick={() => navigate(-1)} variant="outline">
+          Quay lại
+        </Button>
+
+        {/* DÙNG COMPONENT MỚI */}
+        <WalletConnectButton />
       </HStack>
 
-      <VStack spacing={5} align="stretch" mt={6}>
+      <VStack spacing={5} align="stretch">
+        <WarehouseImagesUploader
+          warehouseId={warehouse?._id!}
+          initialImages={data?.data.images || []}
+        />
+
         <FormControl isRequired>
           <FormLabel>Tên kho</FormLabel>
           <Input name="name" value={form.name || ""} onChange={handleChange} />
@@ -258,7 +291,7 @@ export default function EditWarehouse() {
         <Button
           colorScheme="blue"
           onClick={handleSubmit}
-          isDisabled={updateMutation.isPending}
+          isDisabled={updateMutation.isPending || !address}
           size="lg"
           alignSelf="flex-start"
         >
@@ -267,6 +300,8 @@ export default function EditWarehouse() {
           ) : null}
           {updateMutation.isPending ? "Đang cập nhật..." : "Lưu thay đổi"}
         </Button>
+
+        <DeleteButton onConfirm={handleDelete} />
       </VStack>
     </Box>
   );

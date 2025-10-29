@@ -22,7 +22,7 @@ export interface WarehouseUpload {
   txHash?: string;
   imageFile?: File; // optional để không bắt buộc khi update
 }
-export interface Image {
+export interface WareHouseImage {
   public_id: string;
   secure_url: string;
 }
@@ -45,7 +45,7 @@ export interface Warehouse {
   createdAt?: string;
   updatedAt?: string;
   txHash?: string;
-  images: Image[];
+  images: WareHouseImage[];
 }
 export interface WarehouseResponse {
   items: Warehouse[];
@@ -128,4 +128,30 @@ export const updateWarehouseOnBackend = async (
   );
 
   return res.data;
+};
+export const deleteWarehouse = async (warehouseId: string) => {
+  const res = await API.delete(`/warehouses/delete/${warehouseId}`);
+  return res;
+};
+export const addWarehouseImages = async (
+  warehouseId: string,
+  files: File[]
+): Promise<WareHouseImage[]> => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+
+  const res = await API.put(`/warehouses/${warehouseId}/images`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return res.data.data.images; // backend trả về warehouse document, lấy mảng images
+};
+export const deleteWarehouseImage = async (
+  warehouseId: string,
+  public_id: string
+): Promise<WareHouseImage[]> => {
+  const res = await API.delete(
+    `/warehouses/${warehouseId}/images/${public_id}`
+  );
+  return res.data.data.images; // trả về mảng images sau khi xóa
 };
