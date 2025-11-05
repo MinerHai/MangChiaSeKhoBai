@@ -30,6 +30,7 @@ const warehouseSchema = new mongoose.Schema(
         secure_url: { type: String, required: true },
       },
     ],
+    isRenting: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -15,14 +15,16 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useSendOtp, useVerifyOtp } from "../hooks/useOtp";
+
 export default function OtpModal({
   isOpen,
+  onSuccess,
   onClose,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }) {
-  const token = localStorage.getItem("token") || "";
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
   const [countdown, setCountdown] = useState(0);
@@ -31,10 +33,8 @@ export default function OtpModal({
 
   const handleSendOtp = async () => {
     try {
-      const res = await sendOtpMutation.mutateAsync(token);
-      if (res) setMessage("📨 Mã OTP đã được gửi!");
-      else
-        setMessage("📨 Mã OTP đã được gửi! Vui lòng kiểm tra email của bạn.");
+      await sendOtpMutation.mutateAsync();
+      setMessage("📨 Mã OTP đã được gửi! Vui lòng kiểm tra email của bạn.");
       setCountdown(60);
       const timer = setInterval(() => {
         setCountdown((prev) => {
@@ -46,17 +46,17 @@ export default function OtpModal({
         });
       }, 1000);
     } catch (err: any) {
-      console.error(err.message || "❌ Gửi OTP thất bại");
       setMessage(err.message || "❌ Gửi OTP thất bại");
     }
   };
 
   const handleVerifyOtp = async () => {
     try {
-      const data = await verifyOtpMutation.mutateAsync({ token, otp });
+      const data = await verifyOtpMutation.mutateAsync(otp);
       setMessage(`✅ ${data.message}!`);
       setOtp("");
       setTimeout(onClose, 1000);
+      onSuccess(); // dùng để chạy refect
     } catch (err: any) {
       if (err.response?.status === 400) {
         setMessage("❌ Mã OTP không chính xác hoặc đã hết hạn!");
@@ -84,12 +84,9 @@ export default function OtpModal({
 
             <HStack justify="center">
               <PinInput otp size="lg" onChange={setOtp} value={otp}>
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
+                {[...Array(6)].map((_, i) => (
+                  <PinInputField key={i} />
+                ))}
               </PinInput>
             </HStack>
 

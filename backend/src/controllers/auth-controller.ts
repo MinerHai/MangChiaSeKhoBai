@@ -33,42 +33,73 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const existingUser = await User.findOne({ email });
-    if (!existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Tài khoản không tồn tại! Vui lòng kiểm tra lại",
-      });
-    }
+    if (!existingUser)
+      return res
+        .status(400)
+        .json({ success: false, message: "Tài khoản không tồn tại" });
+
     const isMatch = await bcrypt.compare(password, existingUser.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Tài khoản hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại",
+    if (!isMatch)
+      return res.status(400).json({ success: false, message: "Sai mật khẩu" });
+
+    // Nếu người dùng bật 2FA
+    if (existingUser.isTwoFactorEnabled) {
+      // 👉 Không set cookie ở đây
+      // chỉ trả về flag yêu cầu OTP
+      return res.status(200).json({
+        success: true,
+        requireOtp: true,
+        email: existingUser.email, // gửi lại để frontend gọi /otp/send
+        message: "Yêu cầu nhập OTP để hoàn tất đăng nhập",
       });
     }
 
+    // Nếu không bật 2FA → login như bình thường
     const token = await signToken({
       id: existingUser._id ? existingUser._id.toString() : "",
       email: existingUser.email,
       username: existingUser.username,
       role: existingUser.role,
     });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 2 * 60 * 60 * 1000,
+    });
+
     res.status(200).json({
       success: true,
       message: "Đăng nhập thành công",
-      token,
       user: {
-        _id: existingUser._id,
+        id: existingUser._id,
         username: existingUser.username,
         email: existingUser.email,
         role: existingUser.role,
       },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Lỗi máy chủ" });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // giống hệt config khi set cookie
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Đăng xuất thành công",
     });
   } catch (error) {
     console.log(error);
@@ -218,4 +249,31 @@ export const ChangeAvatar = async (req: Request, res: Response) => {
       message: "Lỗi máy chủ! Vui lòng thử lại",
     });
   }
+};
+
+// POST /auth/two-factor
+export const toggleTwoFactor = async (req: Request, res: Response) => {
+  const user = req.user as AuthPayload;
+  const { enable, password } = req.body;
+
+  const existingUser = await User.findById(user.id);
+  if (!existingUser)
+    return res
+      .status(404)
+      .json({ success: false, message: "Không tìm thấy người dùng" });
+
+  // Kiểm tra mật khẩu
+  const isMatch = await bcrypt.compare(password, existingUser.password);
+  if (!isMatch)
+    return res
+      .status(400)
+      .json({ success: false, message: "Mật khẩu không chính xác" });
+
+  existingUser.isTwoFactorEnabled = enable;
+  await existingUser.save();
+
+  return res.json({
+    success: true,
+    message: `Xác thực hai lớp đã được ${enable ? "bật" : "tắt"}`,
+  });
 };

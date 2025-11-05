@@ -15,11 +15,15 @@ import {
   chakra,
   Link as ChakraLink,
   useToast,
+  Checkbox,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { registerSchema, type RegisterInput } from "../../schemas/authSchema";
 import { registerAuth } from "../../services/authService";
 import { ROUTES } from "../../router";
+import { TermsModal } from "../TermsModal";
+
 export default function RegisterPage() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
@@ -31,8 +35,17 @@ export default function RegisterPage() {
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
   });
-
+  const [agreed, setAgreed] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const onSubmit = async (data: RegisterInput) => {
+    if (!agreed) {
+      toast({
+        title: "Chưa đồng ý điều lệ",
+        description: "Bạn phải đọc và đồng ý điều lệ trước khi đăng ký",
+        status: "warning",
+      });
+      return;
+    }
     try {
       const res = await registerAuth(data.username, data.email, data.password);
       setMessage(res.message);
@@ -107,8 +120,31 @@ export default function RegisterPage() {
             <FormErrorMessage>{errors.password?.message}</FormErrorMessage>
           </FormControl>
 
-          <Button type="submit" colorScheme="teal" isLoading={isSubmitting}>
-            Register
+          {/* Checkbox đồng ý điều lệ */}
+          <Checkbox
+            isChecked={agreed}
+            onChange={() => {
+              if (!agreed) onOpen(); // mở modal khi lần đầu tick
+            }}
+          >
+            Tôi đồng ý điều lệ & chính sách
+          </Checkbox>
+
+          {/* Modal điều lệ */}
+          <TermsModal
+            isOpen={isOpen}
+            onClose={onClose}
+            onAgree={() => setAgreed(true)}
+          />
+
+          {/* Nút đăng ký */}
+          <Button
+            type="submit"
+            colorScheme="teal"
+            isLoading={isSubmitting}
+            isDisabled={!agreed}
+          >
+            Đăng ký
           </Button>
 
           {message && (

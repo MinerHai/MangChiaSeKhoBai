@@ -33,23 +33,17 @@ import RoleRequestForm from "../components/Form/RoleRequest";
 import ChangePasswordForm from "../components/Form/ChangePassword";
 import { ROUTES } from "../router";
 import { useNavigate } from "react-router-dom";
+import TwoFactorToggle from "../components/TwoFactorToggle";
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
-  const [token, setToken] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { data, isLoading, error } = useUserProfile(token ?? "");
+  const { data, isLoading, error, refetch } = useUserProfile();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { mutate: sendOtp, isPending } = useSendOtp();
   const toast = useToast();
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    setToken(savedToken);
-  }, []);
-
   // OTP Modal
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -85,7 +79,7 @@ export default function ProfilePage() {
 
     try {
       setUploading(true);
-      const res = await changeAvatar(file, token!);
+      const res = await changeAvatar(file);
 
       if (res.user) {
         setUser(res.user);
@@ -103,6 +97,7 @@ export default function ProfilePage() {
         status: "success",
         duration: 2000,
       });
+      refetch();
     } catch (err) {
       toast({
         title: "Upload thất bại",
@@ -115,28 +110,26 @@ export default function ProfilePage() {
   };
   // Send OTP to verify account
   const handleOpenOtp = () => {
-    if (token) {
-      onOpen();
-      sendOtp(token, {
-        onSuccess: () => {
-          toast({
-            title: "Đã gửi mã OTP",
-            description: "Vui lòng kiểm tra email của bạn",
-            status: "success",
-            duration: 3000,
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Gửi OTP thất bại",
-            description: "Vui lòng thử lại sau ít phút",
-            status: "error",
-            duration: 3000,
-          });
-          onClose(); // đóng modal nếu gửi thất bại
-        },
-      });
-    }
+    onOpen();
+    sendOtp(undefined, {
+      onSuccess: () => {
+        toast({
+          title: "Đã gửi mã OTP",
+          description: "Vui lòng kiểm tra email của bạn",
+          status: "success",
+          duration: 3000,
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Gửi OTP thất bại",
+          description: "Vui lòng thử lại sau ít phút",
+          status: "error",
+          duration: 3000,
+        });
+        onClose();
+      },
+    });
   };
   return (
     <Box minH="100vh" bg={bg} py={10} px={{ base: 4, md: 16 }}>
@@ -232,7 +225,7 @@ export default function ProfilePage() {
             </Text>
 
             {/* Modal OTP */}
-            <OtpModal isOpen={isOpen} onClose={onClose} />
+            <OtpModal isOpen={isOpen} onClose={onClose} onSuccess={refetch} />
           </Flex>
 
           {/* Role */}
@@ -265,6 +258,19 @@ export default function ProfilePage() {
               <RoleRequestForm></RoleRequestForm>
             )}
           </Flex>
+
+          <Flex
+            justify="space-between"
+            borderBottom="1px solid"
+            borderColor="gray.300"
+            pb={3}
+          >
+            <Text fontWeight="bold">Hợp đồng của bạn</Text>
+            <Button as={Link} href={ROUTES.USER_CONTRACT} colorScheme="teal">
+              Xem hợp đồng
+            </Button>
+          </Flex>
+
           {/* Color Mode Switch */}
           <Flex
             justify="space-between"
@@ -274,6 +280,17 @@ export default function ProfilePage() {
           >
             <Text fontWeight="bold">Mode</Text>
             <ColorModeSwitch />
+          </Flex>
+
+          {/* 2FA */}
+          <Flex
+            justify="space-between"
+            borderBottom="1px solid"
+            borderColor="gray.300"
+            pb={3}
+          >
+            <Text fontWeight="bold">Xác thực 2 lớp</Text>
+            <TwoFactorToggle />
           </Flex>
           {/* Change password */}
           <Flex
@@ -295,7 +312,7 @@ export default function ProfilePage() {
               <ModalHeader>Đổi mật khẩu</ModalHeader>
               <ModalCloseButton />
               <ModalBody>
-                <ChangePasswordForm token={token!} onClose={onChangePwClose} />
+                <ChangePasswordForm onClose={onChangePwClose} />
               </ModalBody>
             </ModalContent>
           </Modal>

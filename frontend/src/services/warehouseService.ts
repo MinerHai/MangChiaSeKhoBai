@@ -46,6 +46,7 @@ export interface Warehouse {
   updatedAt?: string;
   txHash?: string;
   images: WareHouseImage[];
+  isRenting: boolean;
 }
 export interface WarehouseResponse {
   items: Warehouse[];

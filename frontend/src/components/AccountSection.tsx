@@ -7,46 +7,50 @@ import {
   MenuList,
   Text,
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../stores/useAuthStore";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../router";
+import { useAuth } from "../stores/useAuthStore";
 
 const AccountSection = () => {
-  const { user, clearUser } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) {
     return (
-      <>
-        <Link to={ROUTES.LOGIN}>Login</Link>
-        <Link to={ROUTES.REGISTER}>Register</Link>
-      </>
+      <Flex gap={3}>
+        <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
+        <Link to={ROUTES.REGISTER}>Đăng kí</Link>
+      </Flex>
     );
   }
+
+  const handleLogout = async () => {
+    await logout(); // gọi API + xoá state
+    navigate(ROUTES.LOGIN, { replace: true }); // chuyển về login
+  };
 
   return (
     <Menu>
       <MenuButton>
-        {user.avatar?.secure_url && (
-          <Flex align="center" gap={2}>
-            <Avatar size="sm" src={user.avatar?.secure_url} />
-            <Text fontWeight="600">{user.username}</Text>
-          </Flex>
-        )}
-        {!user.avatar?.secure_url && <Avatar size="sm" name={user.username} />}
+        <Flex align="center" gap={2}>
+          <Avatar
+            size="sm"
+            src={user.avatar?.secure_url}
+            name={user.username}
+          />
+          <Text fontWeight="600">{user.username}</Text>
+        </Flex>
       </MenuButton>
       <MenuList>
         <MenuItem as={Link} to={ROUTES.PROFILE}>
-          Profile
-        </MenuItem>
-        <MenuItem onClick={clearUser} as={Link} to={ROUTES.LOGIN}>
-          {" "}
-          Logout
+          Hồ sơ
         </MenuItem>
         {user.role === "admin" && (
           <MenuItem as={Link} to={ROUTES.ADMIN}>
             Admin Dashboard
           </MenuItem>
         )}
+        <MenuItem onClick={handleLogout}>Đăng xuất</MenuItem>
       </MenuList>
     </Menu>
   );

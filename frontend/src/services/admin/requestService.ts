@@ -5,13 +5,11 @@ export const fetchRoleRequests = async ({
   email,
   page,
   limit,
-  token,
 }: {
   status?: string;
   email?: string;
   page?: number;
   limit?: number;
-  token: string;
 }) => {
   const params: any = {};
   if (status && status !== "all") params.status = status;
@@ -21,9 +19,6 @@ export const fetchRoleRequests = async ({
 
   const { data } = await API.get("/role/requests", {
     params,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
   return data;
 };

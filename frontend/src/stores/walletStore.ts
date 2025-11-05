@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 interface WalletState {
   address: string | null;
   provider: ethers.providers.Web3Provider | null;
+  signer: ethers.Signer | null;
   isUnlocked: boolean;
   isConnecting: boolean;
   error: string | null;
@@ -12,7 +13,7 @@ interface WalletState {
   setAddress: (address: string) => void;
   clearWallet: () => void;
   resetError: () => void;
-  initAutoDetect: () => () => void; // THÊM DÒNG NÀY
+  initAutoDetect: () => () => void;
 }
 
 export const useWalletStore = create<WalletState>((set, get) => {
@@ -28,7 +29,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     const accounts = await provider.listAccounts();
 
     if (accounts.length > 0) {
-      set({ isUnlocked: true, error: null });
+      set({ isUnlocked: true, error: null, provider });
       return true;
     } else {
       set({
@@ -58,7 +59,13 @@ export const useWalletStore = create<WalletState>((set, get) => {
       const message = `Xác nhận đăng nhập vào ứng dụng\nĐịa chỉ: ${address}\nThời gian: ${new Date().toLocaleString()}`;
       await signer.signMessage(message);
 
-      set({ address, provider, isUnlocked: true, isConnecting: false });
+      set({
+        address,
+        provider,
+        signer,
+        isUnlocked: true,
+        isConnecting: false,
+      });
       console.log("Đăng nhập thành công:", address);
     } catch (error: any) {
       set({ isConnecting: false });
@@ -71,25 +78,23 @@ export const useWalletStore = create<WalletState>((set, get) => {
   return {
     address: null,
     provider: null,
+    signer: null,
     isUnlocked: false,
     isConnecting: false,
     error: null,
 
     connectWallet: async () => {
-      // Bước 1: Kiểm tra MetaMask
       if (!(window as any).ethereum) {
         set({ error: "Vui lòng cài MetaMask!" });
         return;
       }
 
-      // Bước 2: Kiểm tra đã unlock chưa
       const unlocked = await checkWalletStatus();
       if (!unlocked) {
         set({ error: "Vui lòng mở MetaMask và nhập mật khẩu để tiếp tục!" });
         return;
       }
 
-      // Bước 3: Đã unlock → thử ký luôn (chỉ 1 popup)
       await tryAutoConnectAndSign();
     },
 
@@ -98,12 +103,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
       set({
         address: null,
         provider: null,
+        signer: null,
         isUnlocked: false,
         isConnecting: false,
       }),
     resetError: () => set({ error: null }),
 
-    // Hàm này trả về cleanup
     initAutoDetect: () => {
       if (!(window as any).ethereum) return () => {};
 

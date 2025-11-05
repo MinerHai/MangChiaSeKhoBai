@@ -15,6 +15,7 @@ import RegisterWarehouse from "./pages/warehouse/RegisterWarehouse";
 import WarehouseDetail from "./pages/WarehouseDetail";
 import Warehouses from "./pages/Warehouses";
 import UpdateWarehouse from "./pages/warehouse/UpdateWarehouse";
+import ContractsPage from "./pages/ContractsPage";
 
 export const ROUTES = {
   HOME: "/",
@@ -28,7 +29,7 @@ export const ROUTES = {
   USER_WAREHOUSES: "/user/warehouses",
   USER_WAREHOUSES_ADD: "/user/warehouses/add",
   USER_WAREHOUSES_EDIT: (id: string) => `/user/warehouses/edit/${id}`,
-
+  USER_CONTRACT: `/user/contract`,
   ADMIN: "/admin",
   ADMIN_REQUESTS: "/admin/request",
   ADMIN_REQUEST_DETAIL: (id: string) => `/admin/requests/${id}`,
@@ -105,6 +106,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["admin", "owner"]}>
             <UpdateWarehouse />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.USER_CONTRACT,
+        element: (
+          <ProtectedRoute allowedRoles={["user", "admin", "owner"]}>
+            <ContractsPage />
           </ProtectedRoute>
         ),
       },

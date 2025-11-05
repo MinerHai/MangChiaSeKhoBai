@@ -1,16 +1,20 @@
 import { create } from "zustand";
+import {
+  fetchUserProfile,
+  logout as logoutService,
+} from "../services/authService";
 
 export interface User {
   _id: string;
   username: string;
   email: string;
   role: string;
-  token?: string;
   avatar: {
     public_id: string;
     secure_url: string;
   };
   isActive: boolean;
+  isTwoFactorEnabled: boolean;
 }
 
 interface AuthState {
@@ -18,7 +22,8 @@ interface AuthState {
   isLoading: boolean;
   setUser: (user: User) => void;
   clearUser: () => void;
-  restoreSession: () => void;
+  logout: () => Promise<void>;
+  restoreSession: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
@@ -26,23 +31,29 @@ export const useAuth = create<AuthState>((set) => ({
   isLoading: true,
 
   setUser: (user) => {
-    localStorage.setItem("user", JSON.stringify(user));
-    if (user.token) localStorage.setItem("token", user.token);
     set({ user, isLoading: false });
   },
 
   clearUser: () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
     set({ user: null });
   },
 
-  restoreSession: () => {
-    const saved = localStorage.getItem("user");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      set({ user: parsed, isLoading: false });
-    } else {
+  logout: async () => {
+    try {
+      await logoutService(); // gọi API /auth/logout → xoá cookie backend
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      set({ user: null });
+    }
+  },
+
+  restoreSession: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await fetchUserProfile();
+      set({ user: data.user, isLoading: false });
+    } catch {
       set({ user: null, isLoading: false });
     }
   },

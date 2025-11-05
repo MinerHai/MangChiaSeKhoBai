@@ -1,15 +1,14 @@
-import { useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   Button,
-  Text,
-  VStack,
   HStack,
   Image,
   Spinner,
-  Alert,
-  AlertIcon,
-  AlertDescription,
+  Text,
+  VStack,
 } from "@chakra-ui/react";
 import { useWalletStore } from "../stores/walletStore";
 

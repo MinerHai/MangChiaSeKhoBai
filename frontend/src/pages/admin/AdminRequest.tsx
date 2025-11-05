@@ -41,7 +41,6 @@ export default function AdminRequests() {
         email: search,
         page,
         limit,
-        token: localStorage.getItem("token") || "",
       }),
     placeholderData: (prev) => prev,
     staleTime: 10 * 60 * 1000, // 10 phút

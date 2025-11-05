@@ -15,12 +15,10 @@ import { useMutation } from "@tanstack/react-query";
 import { changePassword } from "../../services/authService";
 
 interface ChangePasswordFormProps {
-  token: string;
   onClose: () => void;
 }
 
 export default function ChangePasswordForm({
-  token,
   onClose,
 }: ChangePasswordFormProps) {
   const [form, setForm] = useState<ChangePasswordInput>({
@@ -33,7 +31,7 @@ export default function ChangePasswordForm({
   const toast = useToast();
 
   const mutation = useMutation({
-    mutationFn: () => changePassword(form, token),
+    mutationFn: () => changePassword(form),
     onSuccess: (res) => {
       toast({
         title: res.message || "Đổi mật khẩu thành công!",

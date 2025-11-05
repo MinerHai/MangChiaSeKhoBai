@@ -10,6 +10,7 @@ export interface IUser extends Document {
   };
   role: "user" | "admin" | "owner";
   isActive: boolean;
+  isTwoFactorEnabled: boolean;
 }
 
 const userSchema: Schema = new Schema(
@@ -23,6 +24,7 @@ const userSchema: Schema = new Schema(
     },
     role: { type: String, enum: ["user", "admin", "owner"], default: "user" },
     isActive: { type: Boolean, default: false },
+    isTwoFactorEnabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

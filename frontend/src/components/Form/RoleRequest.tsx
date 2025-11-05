@@ -6,14 +6,13 @@ import {
   Text,
   useToast,
   HStack,
+  VStack,
 } from "@chakra-ui/react";
 import { useSendOwnerRoleRequest } from "../../hooks/useRoleRequest";
 
 export default function RoleRequestForm() {
   const [files, setFiles] = useState<File[]>([]);
   const toast = useToast();
-  const token = localStorage.getItem("token");
-
   const mutation = useSendOwnerRoleRequest();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,51 +33,31 @@ export default function RoleRequestForm() {
       return;
     }
 
-    mutation.mutate(
-      { files, token: token || "" },
-      {
-        onSuccess: (data) => {
-          toast({
-            title: "Thành công",
-            description: data?.message || "Đã gửi yêu cầu!",
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-          setFiles([]);
-        },
-        onError: (err: any) => {
-          toast({
-            title: "Lỗi",
-            description:
-              err?.response?.data?.message || "Gửi yêu cầu thất bại!",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
-        },
-      }
-    );
+    mutation.mutate(files, {
+      onSuccess: () => setFiles([]),
+    });
   };
 
   return (
-    <HStack as="form" spacing={4} onSubmit={handleSubmit}>
+    <VStack as="form" spacing={4} align="stretch" onSubmit={handleSubmit}>
       <Input
         type="file"
         multiple
         accept="image/*"
         onChange={handleFileChange}
-        border="1px solid"
-        borderColor="gray.200"
       />
       {files.length > 0 && (
-        <Text fontSize="sm" color="gray.500">
-          Đã chọn {files.length} ảnh
-        </Text>
+        <Text fontSize="sm">Đã chọn {files.length} ảnh</Text>
       )}
-      <Button type="submit" colorScheme="teal" isDisabled={mutation.isPending}>
-        {mutation.isPending ? <Spinner size="sm" /> : "Gửi yêu cầu"}
-      </Button>
-    </HStack>
+      <HStack justify="flex-end">
+        <Button
+          type="submit"
+          colorScheme="teal"
+          isDisabled={mutation.isPending}
+        >
+          {mutation.isPending ? <Spinner size="sm" /> : "Gửi yêu cầu"}
+        </Button>
+      </HStack>
+    </VStack>
   );
 }

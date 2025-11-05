@@ -78,7 +78,7 @@ export default function EditWarehouse() {
     }
   }, [data]);
 
-  // Mutation update
+  // Mutation updatea block chain
   const updateMutation = useUpdateWarehouse(provider!);
 
   const handleChange = (
@@ -215,7 +215,6 @@ export default function EditWarehouse() {
         Chỉnh sửa kho
       </Heading>
 
-      {/* THAY THẾ HOÀN TOÀN PHẦN KẾT NỐI VÍ */}
       <HStack mb={6} justify="space-between">
         <Button onClick={() => navigate(-1)} variant="outline">
           Quay lại

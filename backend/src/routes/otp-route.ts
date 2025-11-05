@@ -1,8 +1,20 @@
 import express from "express";
-import { sendOtp, verifyOtp } from "../controllers/otp-controller";
+import {
+  sendOtpLogin,
+  verifyOtpLogin,
+  sendOtpActivate,
+  verifyOtpActivate,
+} from "../controllers/otp-controller";
 import { AuthMiddleware } from "../middlewares/auth-middleware";
+
 const router = express.Router();
 
-router.post("/send", AuthMiddleware, sendOtp);
-router.post("/verify", AuthMiddleware, verifyOtp);
+// 🔹 2FA khi đăng nhập (KHÔNG cần JWT)
+router.post("/send-login", sendOtpLogin);
+router.post("/verify-login", verifyOtpLogin);
+
+// 🔹 OTP kích hoạt tài khoản (CÓ JWT)
+router.post("/send-activate", AuthMiddleware, sendOtpActivate);
+router.post("/verify-activate", AuthMiddleware, verifyOtpActivate);
+
 export default router;

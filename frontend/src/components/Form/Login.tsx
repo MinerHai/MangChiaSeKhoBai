@@ -19,10 +19,17 @@ import {
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import { ROUTES } from "../../router";
+import OtpModal from "../../components/OtpModal";
+import { useAuth } from "../../stores/useAuthStore";
+import OtpLoginModal from "../OtpLoginModal";
 
 export default function LoginPage() {
   const [message, setMessage] = useState("");
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
   const navigate = useNavigate();
+  const { restoreSession, setUser } = useAuth();
+
   const {
     register,
     handleSubmit,
@@ -35,11 +42,26 @@ export default function LoginPage() {
     try {
       const res = await login(data.email, data.password);
 
+      if (res.requireOtp) {
+        // ✅ Nếu bật 2FA thì show modal OTP
+        setOtpEmail(data.email);
+        setOtpOpen(true);
+        return;
+      }
+
+      // ✅ Nếu không bật 2FA thì đăng nhập luôn
+      setUser(res.user);
       setMessage(res.message);
-      navigate("/"); // điều hướng sau khi login thành công
+      navigate("/");
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Login failed");
+      setMessage(err instanceof Error ? err.message : "Đăng nhập thất bại");
     }
+  };
+
+  // Khi OTP xác thực thành công
+  const handleOtpSuccess = async () => {
+    await restoreSession();
+    navigate("/");
   };
 
   const cardBg = useColorModeValue("white", "gray.700");
@@ -77,7 +99,7 @@ export default function LoginPage() {
 
           {/* Password */}
           <FormControl isInvalid={!!errors.password}>
-            <FormLabel htmlFor="password">Password</FormLabel>
+            <FormLabel htmlFor="password">Mật khẩu</FormLabel>
             <Input
               id="password"
               type="password"
@@ -88,7 +110,7 @@ export default function LoginPage() {
           </FormControl>
 
           <Button type="submit" colorScheme="teal" isLoading={isSubmitting}>
-            Login
+            Đăng nhập
           </Button>
 
           {message && (
@@ -110,6 +132,14 @@ export default function LoginPage() {
           </Text>
         </Stack>
       </chakra.form>
+
+      {/* Modal nhập mã OTP 2FA */}
+      <OtpLoginModal
+        isOpen={otpOpen}
+        onClose={() => setOtpOpen(false)}
+        onSuccess={handleOtpSuccess}
+        email={otpEmail}
+      />
     </Box>
   );
 }

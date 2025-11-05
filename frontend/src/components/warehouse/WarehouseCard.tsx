@@ -75,24 +75,20 @@ export default function WarehouseCard({ warehouse }: Props) {
           bgGradient="linear(to-t, rgba(0,0,0,0.5), transparent)"
         />
 
-        {/* Địa điểm */}
-        {warehouse.location && (
-          <Badge
-            position="absolute"
-            top="3"
-            left="3"
-            colorScheme="teal"
-            fontSize="0.7rem"
-            rounded="md"
-            px={2}
-            py={1}
-          >
-            <HStack spacing={1}>
-              <Icon as={FaMapMarkerAlt} />
-              <Text>{warehouse.location.district}</Text>
-            </HStack>
-          </Badge>
-        )}
+        {/* Trạng thái thuê */}
+        <Badge
+          position="absolute"
+          top="3"
+          left="3"
+          colorScheme={warehouse.isRenting ? "red" : "green"}
+          fontSize="0.75rem"
+          fontWeight="bold"
+          rounded="md"
+          px={2}
+          py={1}
+        >
+          {warehouse.isRenting ? "Đã được thuê" : "Có thể thuê"}
+        </Badge>
       </Box>
 
       <CardBody>
@@ -110,6 +106,13 @@ export default function WarehouseCard({ warehouse }: Props) {
             {warehouse.name}
           </Heading>
 
+          {/*Địa chỉ*/}
+          <HStack spacing={1}>
+            <Icon as={FaMapMarkerAlt} />
+            <Text fontSize="sm" fontWeight="semibold">
+              {warehouse.location.province}
+            </Text>
+          </HStack>
           {/* Kích thước */}
           <HStack spacing={2}>
             <Icon as={FaRulerCombined} color="gray.500" />

@@ -1,21 +1,18 @@
 import axios from "axios";
 import API from "./APIClient";
 
+/** Đăng nhập */
 export const login = async (email: string, password: string) => {
   try {
+    // Cookie HttpOnly sẽ được tự động set trong trình duyệt
     const res = await API.post("/auth/login", { email, password });
-    localStorage.setItem("token", res.data.token);
-    return res.data;
-  } catch (err: any) {
-    if (axios.isAxiosError(err)) {
-      const message = (err.response?.data as any)?.message ?? "Login failed";
-      throw new Error(message);
-    }
-    if (err instanceof Error) throw err;
-    throw new Error("Login failed");
+    return res.data; // { success, message, user? }
+  } catch (err) {
+    handleAxiosError(err, "Đăng nhập thất bại");
   }
 };
 
+/** Đăng ký */
 export const registerAuth = async (
   username: string,
   email: string,
@@ -28,55 +25,80 @@ export const registerAuth = async (
       password,
     });
     return res.data;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const message = (err.response?.data as any)?.message ?? "Register failed";
-      throw new Error(message);
-    }
-    if (err instanceof Error) throw err;
-    throw new Error("Register failed");
+  } catch (err) {
+    handleAxiosError(err, "Đăng ký thất bại");
   }
 };
 
-export const fetchUserProfile = async (token: string) => {
+/** Lấy thông tin người dùng hiện tại */
+export const fetchUserProfile = async () => {
   try {
-    const res = await API.get("/auth/profile", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    console.log("FETCH /profile gọi");
+    const res = await API.get("/auth/profile");
     return res.data;
-  } catch (err: unknown) {
+  } catch (err) {
+    handleAxiosError(err, "Lấy thông tin người dùng thất bại");
+  }
+};
+
+/** Đổi avatar */
+export const changeAvatar = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("images", file);
+
+    const res = await API.post("/auth/change-avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return res.data;
+  } catch (err) {
+    handleAxiosError(err, "Đổi ảnh đại diện thất bại");
+  }
+};
+
+/** Đổi mật khẩu */
+export const changePassword = async (data: {
+  currentPassword: string;
+  newPassword: string;
+}) => {
+  try {
+    const res = await API.post("/auth/change-password", data);
+    return res.data;
+  } catch (err) {
+    handleAxiosError(err, "Đổi mật khẩu thất bại");
+  }
+};
+
+/** Đăng xuất */
+export const logout = async () => {
+  try {
+    const res = await API.post("/auth/logout");
+    return res.data;
+  } catch (err) {
+    handleAxiosError(err, "Đăng xuất thất bại");
+  }
+};
+export const toggleTwoFactor = async (enable: boolean, password: string) => {
+  try {
+    const res = await API.post("/auth/two-factor", { enable, password });
+    return res.data; // { success, message }
+  } catch (err: any) {
     if (axios.isAxiosError(err)) {
       const message =
-        (err.response?.data as any)?.message ?? "Lấy thông tin user thất bại";
+        (err.response?.data as any)?.message ?? "Cập nhật 2FA thất bại";
       throw new Error(message);
     }
-    if (err instanceof Error) throw err;
-    throw new Error("Lấy thông tin user thất bại");
+    throw err;
   }
 };
 
-export const changeAvatar = async (file: File, token: string) => {
-  const formData = new FormData();
-  formData.append("images", file);
-
-  const res = await API.post("/auth/change-avatar", formData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return res.data;
-};
-
-export const changePassword = async (
-  data: { currentPassword: string; newPassword: string },
-  token: string
-) => {
-  const res = await API.post("/auth/change-password", data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
+/** Helper xử lý lỗi chung */
+function handleAxiosError(err: unknown, defaultMessage: string): never {
+  if (axios.isAxiosError(err)) {
+    const message = (err.response?.data as any)?.message ?? defaultMessage;
+    throw new Error(message);
+  }
+  if (err instanceof Error) throw err;
+  throw new Error(defaultMessage);
+}

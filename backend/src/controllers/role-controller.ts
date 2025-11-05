@@ -190,7 +190,7 @@ export const ResponseRoleRequest = async (req: Request, res: Response) => {
     }
     request.status = status;
     const user = await User.findById(request.user._id);
-    if (user) {
+    if (user && request.status === "approved") {
       user.role = "owner";
       await user.save();
     }
@@ -198,7 +198,10 @@ export const ResponseRoleRequest = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      message: "Đã chấp nhận yêu cầu",
+      message:
+        request.status === "approved"
+          ? "Đã chấp nhận yêu cầu"
+          : "Đã từ chối yêu cầu",
       request,
     });
   } catch (error) {

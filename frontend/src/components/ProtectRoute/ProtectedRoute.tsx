@@ -15,16 +15,11 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, setUser, clearUser } = useAuth();
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const verifyUser = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
       try {
-        const data = await fetchUserProfile(token);
+        const data = await fetchUserProfile();
         setUser(data.user);
       } catch (err) {
         clearUser();
@@ -33,7 +28,7 @@ export default function ProtectedRoute({
       }
     };
     verifyUser();
-  }, [token, setUser, clearUser]);
+  }, [setUser, clearUser]);
 
   if (loading)
     return (
@@ -42,9 +37,10 @@ export default function ProtectedRoute({
       </Center>
     );
 
-  if (!token || !user) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
+
   if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/error" state={{ status: 403 }} />;
   }
