@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IBlog extends Document {
   title: string;
+  slug: string;
   content: string;
   author: mongoose.Types.ObjectId; // ref tới User
   coverImage?: {
@@ -11,6 +12,7 @@ export interface IBlog extends Document {
   tags: string[];
   isPublished: boolean;
   views: number;
+  category?: mongoose.Types.ObjectId; // ref tới Category
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +24,13 @@ const blogSchema = new Schema<IBlog>(
       required: [true, "Tiêu đề bài viết là bắt buộc"],
       trim: true,
       minlength: [5, "Tiêu đề quá ngắn (tối thiểu 5 ký tự)"],
+    },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
     content: {
       type: String,
@@ -41,14 +50,14 @@ const blogSchema = new Schema<IBlog>(
       type: [String],
       default: [],
     },
-    isPublished: {
-      type: Boolean,
-      default: false,
-    },
     views: {
       type: Number,
       default: 0,
       min: [0, "Lượt xem không thể âm"],
+    },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
     },
   },
   { timestamps: true }

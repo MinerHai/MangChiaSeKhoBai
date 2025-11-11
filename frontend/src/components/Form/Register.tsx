@@ -23,6 +23,7 @@ import { registerSchema, type RegisterInput } from "../../schemas/authSchema";
 import { registerAuth } from "../../services/authService";
 import { ROUTES } from "../../router";
 import { TermsModal } from "../TermsModal";
+import OtpModal from "../OtpModal"; // ✅ import thêm
 
 export default function RegisterPage() {
   const [message, setMessage] = useState("");
@@ -36,7 +37,9 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
   const [agreed, setAgreed] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure(); // modal điều lệ
+  const otpDisclosure = useDisclosure(); // modal OTP
+
   const onSubmit = async (data: RegisterInput) => {
     if (!agreed) {
       toast({
@@ -46,20 +49,28 @@ export default function RegisterPage() {
       });
       return;
     }
+
     try {
       const res = await registerAuth(data.username, data.email, data.password);
       setMessage(res.message);
       toast({
         title: "Đăng ký thành công!",
-        description: res.message,
+        description: "Vui lòng xác minh email để kích hoạt tài khoản.",
+        status: "info",
       });
-      navigate(ROUTES.LOGIN);
-    } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Đăng ký thất bại");
+      otpDisclosure.onOpen(); // ✅ mở modal OTP
+    } catch (err: any) {
+      console.error("ERR RESPONSE:", err.response?.data);
+      const errorMsg = err.response?.data?.message || "Đăng ký thất bại!";
+      console.log("ERROR MSG:", errorMsg);
+
+      setMessage(errorMsg);
       toast({
         title: "Đăng ký thất bại!",
-        description: err instanceof Error ? err.message : "Đăng ký thất bại",
+        description: errorMsg, // 👈 nếu chuỗi này rỗng => không hiển thị
         status: "error",
+        duration: 5000,
+        isClosable: true,
       });
     }
   };
@@ -82,62 +93,42 @@ export default function RegisterPage() {
       <chakra.form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={5}>
           <Heading size="lg" textAlign="center">
-            Register
+            Đăng ký tài khoản
           </Heading>
 
-          {/* Username */}
           <FormControl isInvalid={!!errors.username}>
             <FormLabel htmlFor="username">Username</FormLabel>
-            <Input
-              id="username"
-              {...register("username")}
-              placeholder="Enter username"
-            />
+            <Input id="username" {...register("username")} />
             <FormErrorMessage>{errors.username?.message}</FormErrorMessage>
           </FormControl>
 
-          {/* Email */}
           <FormControl isInvalid={!!errors.email}>
             <FormLabel htmlFor="email">Email</FormLabel>
-            <Input
-              id="email"
-              type="email"
-              {...register("email")}
-              placeholder="you@example.com"
-            />
+            <Input id="email" type="email" {...register("email")} />
             <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
           </FormControl>
 
-          {/* Password */}
           <FormControl isInvalid={!!errors.password}>
             <FormLabel htmlFor="password">Password</FormLabel>
-            <Input
-              id="password"
-              type="password"
-              {...register("password")}
-              placeholder="••••••••"
-            />
+            <Input id="password" type="password" {...register("password")} />
             <FormErrorMessage>{errors.password?.message}</FormErrorMessage>
           </FormControl>
 
-          {/* Checkbox đồng ý điều lệ */}
           <Checkbox
             isChecked={agreed}
             onChange={() => {
-              if (!agreed) onOpen(); // mở modal khi lần đầu tick
+              if (!agreed) onOpen();
             }}
           >
             Tôi đồng ý điều lệ & chính sách
           </Checkbox>
 
-          {/* Modal điều lệ */}
           <TermsModal
             isOpen={isOpen}
             onClose={onClose}
             onAgree={() => setAgreed(true)}
           />
 
-          {/* Nút đăng ký */}
           <Button
             type="submit"
             colorScheme="teal"
@@ -166,6 +157,21 @@ export default function RegisterPage() {
           </Text>
         </Stack>
       </chakra.form>
+
+      {/* ✅ Modal OTP */}
+      <OtpModal
+        isOpen={otpDisclosure.isOpen}
+        onClose={otpDisclosure.onClose}
+        onSuccess={() => {
+          toast({
+            title: "Xác minh thành công!",
+            description: "Tài khoản của bạn đã được kích hoạt.",
+            status: "success",
+          });
+          otpDisclosure.onClose();
+          navigate(ROUTES.LOGIN);
+        }}
+      />
     </Box>
   );
 }

@@ -13,7 +13,7 @@ const router = express.Router();
 router.post("/send-login", sendOtpLogin);
 router.post("/verify-login", verifyOtpLogin);
 
-// 🔹 OTP kích hoạt tài khoản (CÓ JWT)
+// 🔹 OTP kích hoạt tài khoản
 router.post("/send-activate", AuthMiddleware, sendOtpActivate);
 router.post("/verify-activate", AuthMiddleware, verifyOtpActivate);
 

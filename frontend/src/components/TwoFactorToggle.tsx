@@ -1,23 +1,22 @@
 import {
+  Button,
   Flex,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Switch,
   Text,
-  VStack,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Button,
-  Input,
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { useAuth } from "../stores/useAuthStore";
 import { toggleTwoFactor } from "../services/authService";
+import { useAuth } from "../stores/useAuthStore";
 
 export default function TwoFactorToggle() {
   const { user, restoreSession } = useAuth();

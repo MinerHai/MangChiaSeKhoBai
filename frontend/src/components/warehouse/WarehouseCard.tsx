@@ -155,7 +155,7 @@ export default function WarehouseCard({ warehouse }: Props) {
                 transform: "scale(1.02)",
               }}
               transition="all 0.2s ease"
-              onClick={() => navigate(`/warehouses/${warehouse._id}`)}
+              onClick={() => navigate(ROUTES.WAREHOUSE_DETAIL(warehouse._id))}
             >
               Xem chi tiết
             </Button>

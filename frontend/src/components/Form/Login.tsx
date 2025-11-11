@@ -19,7 +19,6 @@ import {
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import { ROUTES } from "../../router";
-import OtpModal from "../../components/OtpModal";
 import { useAuth } from "../../stores/useAuthStore";
 import OtpLoginModal from "../OtpLoginModal";
 

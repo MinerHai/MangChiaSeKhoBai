@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Spinner,
   Center,
@@ -36,14 +36,17 @@ import { useNavigate } from "react-router-dom";
 import TwoFactorToggle from "../components/TwoFactorToggle";
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
-
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const { mutate: sendOtp, isPending } = useSendOtp();
+
+  // React Query fetch profile (tự refetch khi user đổi)
   const { data, isLoading, error, refetch } = useUserProfile();
+
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { mutate: sendOtp, isPending } = useSendOtp();
-  const toast = useToast();
+
   // OTP Modal
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -53,9 +56,9 @@ export default function ProfilePage() {
     onOpen: onChangePwOpen,
     onClose: onChangePwClose,
   } = useDisclosure();
-  useEffect(() => {
-    if (data?.user) setUser(data.user);
-  }, [data, setUser]);
+
+  // Dùng data từ backend hoặc Zustand user
+  const currentUser = data?.user ?? user;
 
   if (isLoading)
     return (
@@ -65,13 +68,12 @@ export default function ProfilePage() {
     );
 
   if (error) return <Text>Error loading profile</Text>;
-  if (!user) return <Text>No user data found</Text>;
+  if (!currentUser) return <Text>No user data found</Text>;
 
   const bg = useColorModeValue("gray.50", "gray.800");
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
   // Upload avatar
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,25 +81,13 @@ export default function ProfilePage() {
 
     try {
       setUploading(true);
-      const res = await changeAvatar(file);
-
-      if (res.user) {
-        setUser(res.user);
-      } else if (res.avatarUrl) {
-        setUser({
-          ...user,
-          avatar: {
-            secure_url: res.user.secure_url,
-            public_id: res.user.public_id,
-          },
-        });
-      }
+      await changeAvatar(file);
       toast({
         title: "Cập nhật ảnh đại diện thành công!",
         status: "success",
         duration: 2000,
       });
-      refetch();
+      refetch(); //  refetch lại profile để cập nhật
     } catch (err) {
       toast({
         title: "Upload thất bại",
@@ -108,6 +98,7 @@ export default function ProfilePage() {
       setUploading(false);
     }
   };
+
   // Send OTP to verify account
   const handleOpenOtp = () => {
     onOpen();
@@ -131,11 +122,13 @@ export default function ProfilePage() {
       },
     });
   };
+
   return (
     <Box minH="100vh" bg={bg} py={10} px={{ base: 4, md: 16 }}>
       <Button mb={4} onClick={() => navigate(-1)}>
         ← Quay lại
       </Button>
+
       <VStack align="center" spacing={8}>
         {/* Avatar */}
         <Tooltip label="Click để đổi ảnh đại diện" hasArrow>
@@ -150,8 +143,8 @@ export default function ProfilePage() {
           >
             <Avatar
               size="2xl"
-              name={user.username}
-              src={user.avatar?.secure_url || ""}
+              name={currentUser.username}
+              src={currentUser.avatar?.secure_url || ""}
               border="3px solid"
               borderColor="teal.400"
             />
@@ -182,10 +175,9 @@ export default function ProfilePage() {
           display="none"
         />
 
-        <Heading size="lg">{user.username}</Heading>
+        <Heading size="lg">{currentUser.username}</Heading>
       </VStack>
 
-      {/* Divider */}
       <Divider my={10} />
 
       {/* Info Section */}
@@ -199,7 +191,7 @@ export default function ProfilePage() {
             pb={3}
           >
             <Text fontWeight="bold">Email</Text>
-            <Text>{user.email}</Text>
+            <Text>{currentUser.email}</Text>
           </Flex>
 
           {/* Status */}
@@ -210,8 +202,8 @@ export default function ProfilePage() {
             pb={3}
           >
             <Text fontWeight="bold">Trạng thái</Text>
-            <Text color={user.isActive ? "green.500" : "red.400"}>
-              {user.isActive ? (
+            <Text color={currentUser.isActive ? "green.500" : "red.400"}>
+              {currentUser.isActive ? (
                 "Đã xác thực"
               ) : (
                 <Button
@@ -228,6 +220,19 @@ export default function ProfilePage() {
             <OtpModal isOpen={isOpen} onClose={onClose} onSuccess={refetch} />
           </Flex>
 
+          {/* 2FA */}
+          {currentUser.isActive && (
+            <Flex
+              justify="space-between"
+              borderBottom="1px solid"
+              borderColor="gray.300"
+              pb={3}
+            >
+              <Text fontWeight="bold">Xác thực 2 lớp</Text>
+              <TwoFactorToggle />
+            </Flex>
+          )}
+
           {/* Role */}
           <Flex
             justify="space-between"
@@ -236,9 +241,10 @@ export default function ProfilePage() {
             pb={3}
           >
             <Text fontWeight="bold">Vai trò</Text>
-            <Text textTransform="capitalize">{user.role}</Text>
+            <Text textTransform="capitalize">{currentUser.role}</Text>
           </Flex>
-          {/* User Warehouses */}
+
+          {/* Warehouses */}
           <Flex
             justify="space-between"
             borderBottom="1px solid"
@@ -246,7 +252,7 @@ export default function ProfilePage() {
             pb={3}
           >
             <Text fontWeight="bold">Kho hàng của bạn</Text>
-            {user.role === "owner" || user.role === "admin" ? (
+            {currentUser.role === "owner" || currentUser.role === "admin" ? (
               <Button
                 as={Link}
                 href={ROUTES.USER_WAREHOUSES}
@@ -255,10 +261,11 @@ export default function ProfilePage() {
                 Xem kho hàng
               </Button>
             ) : (
-              <RoleRequestForm></RoleRequestForm>
+              <RoleRequestForm />
             )}
           </Flex>
 
+          {/* Contract */}
           <Flex
             justify="space-between"
             borderBottom="1px solid"
@@ -271,7 +278,7 @@ export default function ProfilePage() {
             </Button>
           </Flex>
 
-          {/* Color Mode Switch */}
+          {/* Color Mode */}
           <Flex
             justify="space-between"
             borderBottom="1px solid"
@@ -282,16 +289,6 @@ export default function ProfilePage() {
             <ColorModeSwitch />
           </Flex>
 
-          {/* 2FA */}
-          <Flex
-            justify="space-between"
-            borderBottom="1px solid"
-            borderColor="gray.300"
-            pb={3}
-          >
-            <Text fontWeight="bold">Xác thực 2 lớp</Text>
-            <TwoFactorToggle />
-          </Flex>
           {/* Change password */}
           <Flex
             justify="space-between"

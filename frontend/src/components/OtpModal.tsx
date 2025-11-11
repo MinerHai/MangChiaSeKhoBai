@@ -56,7 +56,7 @@ export default function OtpModal({
       setMessage(`✅ ${data.message}!`);
       setOtp("");
       setTimeout(onClose, 1000);
-      onSuccess(); // dùng để chạy refect
+      onSuccess(); // dùng để chạy hki otp đúng
     } catch (err: any) {
       if (err.response?.status === 400) {
         setMessage("❌ Mã OTP không chính xác hoặc đã hết hạn!");

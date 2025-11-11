@@ -1,26 +1,25 @@
 // schemas/authSchema.ts
 import { z } from "zod";
 
+const strongPasswordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{6,}$/;
+
 export const registerSchema = z.object({
   username: z
     .string()
     .trim()
     .min(3, { message: "Username ít nhất 3 ký tự" })
-    .refine((val) => val.length > 0, {
-      message: "Username không được để trống",
+    .max(20, { message: "Username tối đa 20 ký tự" })
+    .refine((val) => !val.includes(" "), {
+      message: "Username không được chứa khoảng trắng",
     }),
   email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z
-    .string()
-    .trim()
-    .min(6, { message: "Password ít nhất 6 ký tự" })
-    .refine((val) => val.length > 0, {
-      message: "Password không được để trống",
-    })
-    .refine((val) => !val.includes(" "), {
-      message: "Mật khẩu không được chứa khoảng trắng",
-    }),
+  password: z.string().trim().regex(strongPasswordRegex, {
+    message:
+      "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt",
+  }),
 });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
@@ -32,26 +31,11 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z
-      .string()
-      .trim()
-      .min(6, { message: "Mật khẩu hiện tại phải có ít nhất 6 ký tự" })
-      .refine((val) => val.length > 0, {
-        message: "Không được để trống hoặc toàn khoảng trắng",
-      })
-      .refine((val) => !val.includes(" "), {
-        message: "Mật khẩu không được chứa khoảng trắng",
-      }),
-    newPassword: z
-      .string()
-      .trim()
-      .min(6, { message: "Mật khẩu mới phải có ít nhất 6 ký tự" })
-      .refine((val) => val.length > 0, {
-        message: "Không được để trống hoặc toàn khoảng trắng",
-      })
-      .refine((val) => !val.includes(" "), {
-        message: "Mật khẩu không được chứa khoảng trắng",
-      }),
+    currentPassword: z.string().trim(),
+    newPassword: z.string().trim().regex(strongPasswordRegex, {
+      message:
+        "Mật khẩu mới phải có ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt",
+    }),
   })
   .refine((data) => data.newPassword !== data.currentPassword, {
     message: "Mật khẩu mới không được trùng với mật khẩu hiện tại",

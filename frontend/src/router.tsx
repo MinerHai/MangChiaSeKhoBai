@@ -16,20 +16,32 @@ import WarehouseDetail from "./pages/WarehouseDetail";
 import Warehouses from "./pages/Warehouses";
 import UpdateWarehouse from "./pages/warehouse/UpdateWarehouse";
 import ContractsPage from "./pages/ContractsPage";
+import BlogListPage from "./pages/blog/BloglistPage";
+import BlogCreatePage from "./pages/blog/BlogCreatePage";
+import BlogEditPage from "./pages/blog/BlogEditPage";
+import BlogDetailPage from "./pages/blog/BlogDetailPage";
+import ContactPage from "./pages/contact/ContactPage";
 
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
   PROFILE: "/profile",
+  CONTACT: "/contact",
+  BLOG: "/blog",
 
   WAREHOUSES: "/warehouses",
   WAREHOUSE_DETAIL: (id: string) => `/warehouses/${id}`,
+
+  BLOG_ADD: "/blog/add",
+  BLOG_EDIT: (id: string) => `/blog/edit/${id}`,
+  BLOG_DETAIL: (id: string) => `/blog/${id}`,
 
   USER_WAREHOUSES: "/user/warehouses",
   USER_WAREHOUSES_ADD: "/user/warehouses/add",
   USER_WAREHOUSES_EDIT: (id: string) => `/user/warehouses/edit/${id}`,
   USER_CONTRACT: `/user/contract`,
+
   ADMIN: "/admin",
   ADMIN_REQUESTS: "/admin/request",
   ADMIN_REQUEST_DETAIL: (id: string) => `/admin/requests/${id}`,
@@ -62,6 +74,50 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["user", "admin", "owner"]}>
             <UserProfile />
+          </ProtectedRoute>
+        ),
+      },
+      //Blog
+
+      {
+        path: ROUTES.BLOG,
+        element: (
+          <ProtectedRoute allowedRoles={["user", "admin", "owner"]}>
+            <BlogListPage />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: ROUTES.CONTACT,
+        element: (
+          <ProtectedRoute allowedRoles={["user", "admin", "owner"]}>
+            <ContactPage />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: ROUTES.BLOG_ADD,
+        element: (
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <BlogCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.BLOG_EDIT(":id"),
+        element: (
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <BlogEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.BLOG_DETAIL(":id"),
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "user", "owner"]}>
+            <BlogDetailPage />
           </ProtectedRoute>
         ),
       },

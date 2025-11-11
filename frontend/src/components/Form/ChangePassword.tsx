@@ -41,9 +41,13 @@ export default function ChangePasswordForm({
       onClose();
     },
     onError: (err: any) => {
+      const errorMessage =
+        err?.response?.data?.message ||
+        "Đổi mật khẩu thất bại. Vui lòng thử lại.";
+
       toast({
         title: "Đổi mật khẩu thất bại!",
-        description: err?.response?.data?.message || "Vui lòng thử lại.",
+        description: errorMessage,
         status: "error",
         duration: 3000,
       });

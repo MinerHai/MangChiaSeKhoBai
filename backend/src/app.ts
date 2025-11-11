@@ -12,6 +12,9 @@ import otpRoute from "./routes/otp-route";
 import roleRoute from "./routes/role-route";
 import warehouseRoute from "./routes/warehouse-route";
 import rentalContractRoute from "./routes/rentalContract-route";
+import blogRoute from "./routes/blog-route";
+import categoryRoute from "./routes/category-route";
+
 import cors from "cors";
 import { checkApiKey } from "./middlewares/api-key-middleware";
 
@@ -68,6 +71,8 @@ app.use("/api/otp", checkApiKey, otpRoute);
 app.use("/api/role", checkApiKey, roleRoute);
 app.use("/api/warehouses", checkApiKey, warehouseRoute);
 app.use("/api/contracts", checkApiKey, rentalContractRoute);
+app.use("/api/blogs", checkApiKey, blogRoute);
+app.use("/api/categories", checkApiKey, categoryRoute);
 app.get("/test", (req, res) => res.send("OK"));
 connectDB();
 

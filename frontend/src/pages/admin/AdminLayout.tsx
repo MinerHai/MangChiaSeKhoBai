@@ -7,6 +7,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { ROUTES } from "../../router";
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -16,8 +17,8 @@ export default function AdminLayout() {
 
   const menu = [
     { path: "/admin", label: "Dashboard" },
-    { path: "/admin/users", label: "Users" },
-    { path: "/admin/request", label: "Requests" },
+    { path: ROUTES.BLOG_ADD, label: "Blogs Add" },
+    { path: ROUTES.ADMIN_REQUESTS, label: "Requests" },
     { path: "/admin/settings", label: "Settings" },
   ];
 

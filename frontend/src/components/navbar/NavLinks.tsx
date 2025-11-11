@@ -8,8 +8,8 @@ const NavLinks = () => {
   const links = [
     { name: "Trang chủ", path: "/" },
     { name: "Kho hàng", path: ROUTES.WAREHOUSES },
-    { name: "Giới thiệu", path: "/about" },
-    { name: "Liên hệ", path: "/contact" },
+    { name: "Tin tức", path: ROUTES.BLOG },
+    { name: "Liên hệ", path: ROUTES.CONTACT },
     { name: "Kho hàng của tôi", path: ROUTES.USER_WAREHOUSES },
     { name: "Hợp đồng của tôi", path: ROUTES.USER_CONTRACT },
   ];

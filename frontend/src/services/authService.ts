@@ -26,7 +26,7 @@ export const registerAuth = async (
     });
     return res.data;
   } catch (err) {
-    handleAxiosError(err, "Đăng ký thất bại");
+    throw err;
   }
 };
 
@@ -67,6 +67,7 @@ export const changePassword = async (data: {
     return res.data;
   } catch (err) {
     handleAxiosError(err, "Đổi mật khẩu thất bại");
+    throw err;
   }
 };
 

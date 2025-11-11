@@ -236,6 +236,15 @@ export const updateWarehouse = async (req: Request, res: Response) => {
         ownerUserId: wh.ownerUserId,
       });
     }
+
+    // kho đang đc thuê thì k cho sửa
+    if (wh.isRenting)
+      return res.status(400).json({
+        success: false,
+        message: "Không thể chỉnh sửa kho khi đang được thuê!!",
+        data: wh,
+      });
+
     // Cập nhật các trường nếu chúng được cung cấp trong body
     // update thông tin
     if (description) wh.description = description;
@@ -290,6 +299,14 @@ export const deleteWarehouse = async (req: Request, res: Response) => {
         message: "Bạn không có quyền xóa kho hàng này",
       });
     }
+
+    // kho đang đc thuê thì k cho sửa
+    if (wh.isRenting)
+      return res.status(400).json({
+        success: false,
+        message: "Không thể chỉnh sửa kho khi đang được thuê!!",
+        data: wh,
+      });
 
     // Xóa ảnh ở Cloudinary nếu có
     if (wh.images && wh.images.length > 0) {

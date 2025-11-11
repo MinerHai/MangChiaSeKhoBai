@@ -21,6 +21,21 @@ export const register = async (req: Request, res: Response) => {
 
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
+
+    const token = await signToken({
+      id: newUser._id ? newUser._id.toString() : "",
+      email: newUser.email,
+      username: newUser.username,
+      role: newUser.role,
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 2 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       success: true,
       message: "Đăng ký tài khoản thành công",

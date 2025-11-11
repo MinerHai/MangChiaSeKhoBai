@@ -186,7 +186,7 @@ export default function EditWarehouse() {
     } catch (err: any) {
       console.error(err);
       toast({
-        title: "Có lỗi xảy ra!!",
+        title: err.response.data.message || "Có lỗi xảy ra!!",
         status: "error",
         duration: 1500,
         position: "top-right",
